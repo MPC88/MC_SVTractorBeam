@@ -11,7 +11,7 @@ namespace MC_SVFastRefining
     {
         public const string pluginGuid = "mc.starvalor.tractor";
         public const string pluginName = "SV Tractor Beam";
-        public const string pluginVersion = "1.0.1";
+        public const string pluginVersion = "1.0.2";
 
         private static Dictionary<BuffTowing, BuffTowData> data = new Dictionary<BuffTowing, BuffTowData>();
 
@@ -43,7 +43,7 @@ namespace MC_SVFastRefining
                 };
                 Vector3 tSize = buffTowData.targetRb.gameObject.GetComponent<Collider>().bounds.size;
                 Vector3 pSize = buffTowData.ownerTrans.gameObject.GetComponent<Collider>().bounds.size;
-                buffTowData.additionalDist = (Mathf.Max(tSize.x, tSize.y) + Mathf.Max(pSize.x, pSize.y)) / 2;
+                buffTowData.additionalDist = (Mathf.Max(tSize.x, tSize.y, tSize.z) + Mathf.Max(pSize.x, pSize.y, pSize.z)) / 2;
                 __instance.gameObject.GetComponent<BuffDistanceLimit>().maxDistance += buffTowData.additionalDist;
                 buffTowData.desiredDistance += buffTowData.additionalDist;
                 data.Add(__instance, buffTowData);
