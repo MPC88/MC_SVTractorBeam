@@ -6,9 +6,9 @@ Uninstall any mods and attempt to replicate issues before reporting any suspecte
   
 Function  
 ========  
-- Tractor beams now always apply the full force (by default, the force applied is scaled based on target's position).  
+- Tractor beams now always apply the full force (in vanilla, the force applied is scaled based on target's position).  
 - The distance the tractor beam tries to keep the...uhh..."tractoree" from the "tractorer" now accounts for the size of both.
-- Tractor beam maximum range is increased based on size of tractor beam source and target objects to account for above "desired distance" change.    
+- Tractor beam maximum range is increased based on size of tractor beam source and target objects to account for "desired distance" change.  
   
 Install  
 =======  
