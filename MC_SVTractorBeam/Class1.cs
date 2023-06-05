@@ -11,7 +11,7 @@ namespace MC_SVFastRefining
     {
         public const string pluginGuid = "mc.starvalor.tractor";
         public const string pluginName = "SV Tractor Beam";
-        public const string pluginVersion = "1.0.0";
+        public const string pluginVersion = "1.0.1";
 
         private static Dictionary<BuffTowing, BuffTowData> data = new Dictionary<BuffTowing, BuffTowData>();
 
@@ -43,7 +43,9 @@ namespace MC_SVFastRefining
                 };
                 Vector3 tSize = buffTowData.targetRb.gameObject.GetComponent<Collider>().bounds.size;
                 Vector3 pSize = buffTowData.ownerTrans.gameObject.GetComponent<Collider>().bounds.size;
-                buffTowData.desiredDistance += (Mathf.Max(tSize.x, tSize.y) + Mathf.Max(pSize.x, pSize.y)) / 2;
+                buffTowData.additionalDist = (Mathf.Max(tSize.x, tSize.y) + Mathf.Max(pSize.x, pSize.y)) / 2;
+                __instance.gameObject.GetComponent<BuffDistanceLimit>().maxDistance += buffTowData.additionalDist;
+                buffTowData.desiredDistance += buffTowData.additionalDist;
                 data.Add(__instance, buffTowData);
             }
 
@@ -68,7 +70,10 @@ namespace MC_SVFastRefining
         private static void BuffTowingEnd_Pre(BuffTowing __instance)
         {
             if (data.ContainsKey(__instance))
+            {
+                __instance.GetComponent<BuffDistanceLimit>().maxDistance -= data[__instance].additionalDist;
                 data.Remove(__instance);
+            }
         }
     }
 
@@ -78,5 +83,6 @@ namespace MC_SVFastRefining
         internal Entity targetEntity;
         internal Rigidbody targetRb;
         internal float desiredDistance;
+        internal float additionalDist;
     }
 }
