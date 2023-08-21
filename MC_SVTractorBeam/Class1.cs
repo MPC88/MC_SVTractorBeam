@@ -4,16 +4,18 @@ using HarmonyLib;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MC_SVFastRefining
+namespace MC_SVTractorBeam
 {
     [BepInPlugin(pluginGuid, pluginName, pluginVersion)]
     public class Main : BaseUnityPlugin
     {
         public const string pluginGuid = "mc.starvalor.tractor";
         public const string pluginName = "SV Tractor Beam";
-        public const string pluginVersion = "1.0.2";
+        public const string pluginVersion = "2.0.0";
 
-        private static Dictionary<BuffTowing, BuffTowData> data = new Dictionary<BuffTowing, BuffTowData>();
+        private enum Stat { cnt, maxSpeed, acceleration }
+
+        private static Dictionary<SpaceShip, float[]> baseStats = new Dictionary<SpaceShip, float[]>();
 
         private static BepInEx.Logging.ManualLogSource log = BepInEx.Logging.Logger.CreateLogSource(pluginName);
 
@@ -22,67 +24,54 @@ namespace MC_SVFastRefining
             Harmony.CreateAndPatchAll(typeof(Main));
         }
 
-        [HarmonyPatch(typeof(BuffTowing), "FixedUpdate")]
+
+        [HarmonyPatch(typeof(BuffTowing), "Begin")]
         [HarmonyPrefix]
-        private static bool BuffTowingFixedUpdate_Pre(BuffTowing __instance)
+        private static void BuffTowingBegin_Post(BuffTowing __instance)
         {
-            BuffTowData buffTowData;
+            Entity targetEntity = (Entity)AccessTools.Field(typeof(BuffTowing), "targetEntity").GetValue(__instance);
+            if (targetEntity == null || targetEntity.gameObject.GetComponent<AIControl>() == null)
+                return;
 
-            if (data.Count > 0 && data.ContainsKey(__instance))
-            {
-                buffTowData = data[__instance];
-            }
+            SpaceShip ss = targetEntity.gameObject.GetComponent<SpaceShip>();
+            if (ss == null)
+                return;
+            
+            int factor = 11 - (ss.shipClass * 2);
+            if (factor < 1)
+                return;
+
+            if (!baseStats.ContainsKey(ss))
+                baseStats.Add(ss, new float[] {1f, ss.stats.maxSpeed, ss.stats.acceleration });
             else
-            {
-                buffTowData = new BuffTowData()
-                {
-                    ownerTrans = (Transform)AccessTools.Field(typeof(BuffTowing), "ownerTrans").GetValue(__instance),
-                    targetEntity = (Entity)AccessTools.Field(typeof(BuffTowing), "targetEntity").GetValue(__instance),
-                    targetRb = (Rigidbody)AccessTools.Field(typeof(BuffTowing), "targetRb").GetValue(__instance),
-                    desiredDistance = (float)AccessTools.Field(typeof(BuffTowing), "desiredDistance").GetValue(__instance)                    
-                };
-                Vector3 tSize = buffTowData.targetRb.gameObject.GetComponent<Collider>().bounds.size;
-                Vector3 pSize = buffTowData.ownerTrans.gameObject.GetComponent<Collider>().bounds.size;
-                buffTowData.additionalDist = (Mathf.Max(tSize.x, tSize.y, tSize.z) + Mathf.Max(pSize.x, pSize.y, pSize.z)) / 2;
-                __instance.gameObject.GetComponent<BuffDistanceLimit>().maxDistance += buffTowData.additionalDist;
-                buffTowData.desiredDistance += buffTowData.additionalDist;
-                data.Add(__instance, buffTowData);
-            }
+                baseStats[ss][(int)Stat.cnt]++;
 
-            if (__instance.active && buffTowData.ownerTrans != null)
-            {
-                Vector3 normalized = (buffTowData.ownerTrans.position - buffTowData.targetEntity.transform.position).normalized;
-                float d = Vector3.Distance(buffTowData.ownerTrans.position, buffTowData.targetEntity.transform.position) - buffTowData.desiredDistance;
-                float f = 0;
-                if (d > 0)
-                    f = __instance.towingForce;
-                else if (d < 0)
-                    f = -__instance.towingForce;
-
-                buffTowData.targetRb.AddForce(normalized * f, ForceMode.Force);
-            }
-
-            return false;
+            ss.stats.maxSpeed /= factor;
+            ss.stats.acceleration /= factor;
         }
 
         [HarmonyPatch(typeof(BuffTowing), "End")]
         [HarmonyPrefix]
         private static void BuffTowingEnd_Pre(BuffTowing __instance)
         {
-            if (data.ContainsKey(__instance))
+            Entity targetEntity = (Entity)AccessTools.Field(typeof(BuffTowing), "targetEntity").GetValue(__instance);
+            if (targetEntity == null || targetEntity.gameObject.GetComponent<AIControl>() == null)
+                return;
+
+            SpaceShip ss = targetEntity.gameObject.GetComponent<SpaceShip>();
+            if (ss == null)
+                return;
+
+            if (!baseStats.ContainsKey(ss))
+                return;
+
+            baseStats[ss][(int)Stat.cnt]--;
+            if (baseStats[ss][(int)Stat.cnt] <= 0)
             {
-                __instance.GetComponent<BuffDistanceLimit>().maxDistance -= data[__instance].additionalDist;
-                data.Remove(__instance);
+                ss.stats.maxSpeed = baseStats[ss][(int)Stat.maxSpeed];
+                ss.stats.acceleration = baseStats[ss][(int)Stat.acceleration];
+                baseStats.Remove(ss);
             }
         }
-    }
-
-    internal class BuffTowData
-    {
-        internal Transform ownerTrans;
-        internal Entity targetEntity;
-        internal Rigidbody targetRb;
-        internal float desiredDistance;
-        internal float additionalDist;
     }
 }
