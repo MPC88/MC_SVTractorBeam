@@ -18,13 +18,13 @@ namespace MC_SVTractorBeam
         private static Dictionary<SpaceShip, float[]> baseStats = new Dictionary<SpaceShip, float[]>();
 
         private static BepInEx.Logging.ManualLogSource log = BepInEx.Logging.Logger.CreateLogSource(pluginName);
-
+        
+        #region Fridge
         public void Awake()
         {
             Harmony.CreateAndPatchAll(typeof(Main));
         }
-
-
+                
         [HarmonyPatch(typeof(BuffTowing), "Begin")]
         [HarmonyPrefix]
         private static void BuffTowingBegin_Post(BuffTowing __instance)
@@ -73,5 +73,6 @@ namespace MC_SVTractorBeam
                 baseStats.Remove(ss);
             }
         }
+        #endregion
     }
 }
