@@ -37,17 +37,21 @@ namespace MC_SVTractorBeam
             if (ss == null)
                 return;
             
-            int factor = 11 - (ss.shipClass * 2);
-            if (factor < 1)
-                return;
-
             if (!baseStats.ContainsKey(ss))
                 baseStats.Add(ss, new float[] {1f, ss.stats.maxSpeed, ss.stats.acceleration });
             else
                 baseStats[ss][(int)Stat.cnt]++;
 
-            ss.stats.maxSpeed /= factor;
-            ss.stats.acceleration /= factor;
+            //clamp(X / (11 - (class*2)),0,X)
+            int factor = 11 - (ss.shipClass * 2);
+            if (factor < 1)
+                return;
+            //ss.stats.maxSpeed = Mathf.Clamp(ss.stats.maxSpeed / factor, 0, ss.stats.maxSpeed);
+            //ss.stats.acceleration = Mathf.Clamp(ss.stats.acceleration / factor, 0, ss.stats.acceleration);
+
+            //X * clamp((LN(class*(1+(class/100)))/2), 0.1, 1)
+            //ss.stats.maxSpeed *= Mathf.Clamp(Mathf.Log(ss.shipClass * (1 + (ss.shipClass/100)))/2, 0.1f, 1);
+            ss.stats.acceleration *= Mathf.Clamp(Mathf.Log(ss.shipClass * (1 + (ss.shipClass / 100))) / 2, 0.1f, 1);
         }
 
         [HarmonyPatch(typeof(BuffTowing), "End")]
